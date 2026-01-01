@@ -10,7 +10,7 @@
         body {
             font-family: 'Quicksand', sans-serif;
             background-color: #f0f4f8;
-            color: #041b42;
+            color: #2d3748;
         }
         .app-container {
             max-width: 480px;
@@ -47,20 +47,10 @@
             font-weight: 700;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
-        .btn-submit:active {
-            transform: scale(0.98);
-        }
         .chip-checkbox input:checked + div {
             background-color: #667eea;
             color: white;
             border-color: #667eea;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e0;
-            border-radius: 10px;
         }
     </style>
 </head>
@@ -68,22 +58,9 @@
 
     <div class="app-container flex flex-col">
         <!-- Header -->
-        <div class="header-gradient p-6 rounded-b-[40px] text-white shadow-lg">
-            <div class="flex justify-between items-center mb-4">
-                <div>
-                    <h1 class="text-2xl font-bold">PetHealth 🐾</h1>
-                    <p class="text-blue-100 text-sm">Registro de Bienestar Romeo</p>
-                </div>
-                <div class="bg-white/20 p-2 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                </div>
-            </div>
-            <div id="status-card" class="bg-white/10 rounded-2xl p-3 flex justify-between items-center text-xs">
-                <span>Estado del Sistema: <span class="font-bold text-green-300">En Línea</span></span>
-                <span id="live-clock">--:--:--</span>
-            </div>
+        <div class="header-gradient p-6 rounded-b-[40px] text-white shadow-lg text-center">
+            <h1 class="text-2xl font-bold">PetHealth 🐾</h1>
+            <p class="text-blue-100 text-sm">Registro de Bienestar Local</p>
         </div>
 
         <!-- Main Content -->
@@ -105,9 +82,16 @@
                         </div>
                     </div>
 
+                    <!-- Duración con selector de unidad -->
                     <div>
-                        <label class="text-xs font-semibold text-gray-500 ml-1">Duración (Min)</label>
-                        <input type="number" step="0.1" id="duration" placeholder="Ej: 2.5" required class="w-full input-style text-sm">
+                        <label class="text-xs font-semibold text-gray-500 ml-1">Duración del Episodio</label>
+                        <div class="flex gap-2">
+                            <input type="number" step="0.01" id="duration" placeholder="Ej: 0.45 o 1.8" required class="flex-1 input-style text-sm">
+                            <select id="duration-unit" class="w-32 input-style text-sm">
+                                <option value="segundos">Segundos</option>
+                                <option value="minutos" selected>Minutos</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div>
@@ -147,52 +131,51 @@
                     </div>
 
                     <div>
-                        <label class="text-xs font-semibold text-gray-500 ml-1">Observaciones</label>
-                        <textarea id="notes" rows="2" placeholder="¿Cómo se comportó después?" class="w-full input-style text-sm"></textarea>
+                        <label class="text-xs font-semibold text-gray-500 ml-1">Notas Adicionales</label>
+                        <textarea id="notes" rows="2" placeholder="Describa complicaciones..." class="w-full input-style text-sm"></textarea>
                     </div>
 
                     <button type="submit" class="w-full btn-submit py-4 uppercase tracking-wider text-sm">
-                        Guardar Registro
+                        Registrar en Dispositivo
                     </button>
                 </form>
             </div>
 
             <!-- List Section -->
             <div class="flex justify-between items-center mb-4 px-2">
-                <h3 class="font-bold text-gray-700">Historial Médico</h3>
-                <button onclick="exportData()" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">Exportar CSV</button>
+                <h3 class="font-bold text-gray-700">Historial en este Teléfono</h3>
+                <button onclick="exportData()" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">Exportar Informe</button>
             </div>
 
             <div id="records-container" class="space-y-4 pb-10">
-                <!-- Se inyectan los registros aquí -->
+                <!-- Registros -->
             </div>
         </main>
     </div>
 
     <script>
-        const DB_KEY = 'pet_seizure_logs_v2';
+        const DB_KEY = 'pet_health_vault_v1';
 
         document.addEventListener('DOMContentLoaded', () => {
-            updateClock();
-            setInterval(updateClock, 1000);
             loadRecords();
             document.getElementById('date').valueAsDate = new Date();
-        });
-
-        function updateClock() {
+            // Carga la hora actual por defecto
             const now = new Date();
-            document.getElementById('live-clock').innerText = now.toLocaleTimeString();
-        }
+            const currentTime = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('time').value = currentTime;
+        });
 
         document.getElementById('incident-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const symptoms = Array.from(document.querySelectorAll('.sympt:checked')).map(cb => cb.value);
+            const durationValue = document.getElementById('duration').value;
+            const durationUnit = document.getElementById('duration-unit').value;
             
             const entry = {
                 id: Date.now(),
                 date: document.getElementById('date').value,
                 time: document.getElementById('time').value,
-                duration: document.getElementById('duration').value,
+                duration: `${durationValue} ${durationUnit}`,
                 type: document.getElementById('type').value,
                 symptoms: symptoms,
                 notes: document.getElementById('notes').value
@@ -202,6 +185,7 @@
             data.unshift(entry);
             localStorage.setItem(DB_KEY, JSON.stringify(data));
             
+            // Reset form
             e.target.reset();
             document.querySelectorAll('.sympt').forEach(cb => cb.checked = false);
             document.getElementById('date').valueAsDate = new Date();
@@ -213,11 +197,7 @@
             const data = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
             
             if (data.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-10">
-                        <div class="text-4xl mb-2">🐶</div>
-                        <p class="text-gray-400 text-sm italic">No hay registros guardados aún.</p>
-                    </div>`;
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-sm">Memoria vacía. Registre un nuevo evento.</div>`;
                 return;
             }
 
@@ -229,19 +209,17 @@
                             <p class="text-lg font-bold text-gray-800">${record.time}</p>
                         </div>
                         <button onclick="deleteRecord(${record.id})" class="text-red-300 hover:text-red-500 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
                         </button>
                     </div>
                     <div class="flex gap-4 mb-3">
-                        <div class="bg-gray-50 rounded-lg p-2 flex-1">
+                        <div class="bg-gray-50 rounded-lg p-2 flex-1 text-center">
                             <p class="text-[9px] text-gray-400 uppercase font-bold">Duración</p>
-                            <p class="text-sm font-semibold">${record.duration} min</p>
+                            <p class="text-sm font-semibold">${record.duration}</p>
                         </div>
-                        <div class="bg-gray-50 rounded-lg p-2 flex-1">
+                        <div class="bg-gray-50 rounded-lg p-2 flex-1 text-center">
                             <p class="text-[9px] text-gray-400 uppercase font-bold">Tipo</p>
-                            <p class="text-sm font-semibold">${record.type}</p>
+                            <p class="text-sm font-semibold text-indigo-600">${record.type}</p>
                         </div>
                     </div>
                     ${record.symptoms.length > 0 ? `
@@ -249,34 +227,32 @@
                             ${record.symptoms.map(s => `<span class="bg-indigo-100 text-indigo-700 text-[9px] px-2 py-0.5 rounded-full font-bold">${s}</span>`).join('')}
                         </div>
                     ` : ''}
-                    ${record.notes ? `
-                        <p class="text-xs text-gray-600 bg-yellow-50 p-2 rounded-lg border-l-2 border-yellow-200">
-                            ${record.notes}
-                        </p>
-                    ` : ''}
+                    ${record.notes ? `<p class="text-xs text-gray-600 bg-yellow-50 p-2 rounded-lg border-l-2 border-yellow-200">${record.notes}</p>` : ''}
                 </div>
             `).join('');
         }
 
         function deleteRecord(id) {
-            const data = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
-            const newData = data.filter(r => r.id !== id);
-            localStorage.setItem(DB_KEY, JSON.stringify(newData));
-            loadRecords();
+            if(confirm("¿Eliminar este registro de inteligencia médica?")) {
+                const data = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
+                const newData = data.filter(r => r.id !== id);
+                localStorage.setItem(DB_KEY, JSON.stringify(newData));
+                loadRecords();
+            }
         }
 
         function exportData() {
             const data = JSON.parse(localStorage.getItem(DB_KEY) || '[]');
-            if (data.length === 0) return;
+            if (data.length === 0) return alert("No hay datos para exportar.");
             let csv = 'Fecha,Hora,Duracion,Tipo,Sintomas,Notas\n';
             data.forEach(r => {
-                csv += `"${r.date}","${r.time}","${r.duration}","${r.type}","${r.symptoms.join(';')}", "${r.notes}"\n`;
+                csv += `"${r.date}","${r.time}","${r.duration}","${r.type}","${r.symptoms.join(';')}", "${r.notes.replace(/"/g, "'")}"\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Reporte_Salud_Mascota_${new Date().getTime()}.csv`;
+            a.download = `INTEL_MEDICA_MASCOTA_${new Date().getTime()}.csv`;
             a.click();
         }
     </script>
